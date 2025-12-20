@@ -1,0 +1,81 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Assemble Debug",
+      "type": "shell",
+      "command": "./gradlew assembleDebug",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Install Debug",
+      "type": "shell",
+      "command": "./gradlew installDebug",
+      "dependsOn": "Assemble Debug",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Assemble Release",
+      "type": "shell",
+      "command": "./gradlew assembleRelease",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Install Release",
+      "type": "shell",
+      "command": "./gradlew installRelease",
+      "dependsOn": "Assemble Release",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Launch App",
+      "type": "shell",
+      "command": "adb shell am start -n com.example.textbot/com.example.textbot.MainActivity",
+      "group": "none",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Send Mock SMS",
+      "type": "shell",
+      "command": "./scripts/send_mock_sms.sh '${input:smsNumber}' '${input:smsMessage}'",
+      "group": "none",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    }
+  ],
+  "inputs": [
+    {
+      "id": "smsNumber",
+      "description": "Phone number of the sender",
+      "default": "0612345678",
+      "type": "promptString"
+    },
+    {
+      "id": "smsMessage",
+      "description": "Message content",
+      "default": "Hello from VS Code!",
+      "type": "promptString"
+    }
+  ]
+}

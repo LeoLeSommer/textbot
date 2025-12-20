@@ -1,0 +1,34 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug Android (Install & Launch)",
+      "type": "node",
+      "request": "launch",
+      "preLaunchTask": "Install Debug",
+      "runtimeExecutable": "adb",
+      "runtimeArgs": [
+        "shell",
+        "am",
+        "start",
+        "-n",
+        "com.example.textbot/com.example.textbot.MainActivity"
+      ],
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "name": "Release Android (Install & Launch)",
+      "type": "node",
+      "request": "launch",
+      "preLaunchTask": "Install Release",
+      "runtimeExecutable": "adb",
+      "runtimeArgs": [
+        "shell",
+        "am",
+        "start",
+        "-n",
+        "com.example.textbot/com.example.textbot.MainActivity"
+      ]
+    }
+  ]
+}

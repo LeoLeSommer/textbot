@@ -1,0 +1,123 @@
+package com.example.textbot.data
+
+import android.content.ContentResolver
+import android.content.Context
+import android.database.Cursor
+import android.net.Uri
+import android.provider.ContactsContract
+import android.provider.Telephony
+import android.util.Log
+
+class SmsRepository(private val context: Context) {
+
+    fun getAllConversations(): List<Conversation> {
+        val conversations = mutableMapOf<String, MutableList<SmsMessage>>()
+        val contentResolver: ContentResolver = context.contentResolver
+        
+        val cursor: Cursor? = contentResolver.query(
+            Telephony.Sms.CONTENT_URI,
+            arrayOf(
+                Telephony.Sms._ID,
+                Telephony.Sms.ADDRESS,
+                Telephony.Sms.BODY,
+                Telephony.Sms.DATE,
+                Telephony.Sms.TYPE,
+                Telephony.Sms.READ
+            ),
+            null,
+            null,
+            Telephony.Sms.DEFAULT_SORT_ORDER
+        )
+
+        cursor?.use {
+            val addressIndex = it.getColumnIndex(Telephony.Sms.ADDRESS)
+            val bodyIndex = it.getColumnIndex(Telephony.Sms.BODY)
+            val dateIndex = it.getColumnIndex(Telephony.Sms.DATE)
+            val idIndex = it.getColumnIndex(Telephony.Sms._ID)
+            val typeIndex = it.getColumnIndex(Telephony.Sms.TYPE)
+            val readIndex = it.getColumnIndex(Telephony.Sms.READ)
+
+            while (it.moveToNext()) {
+                val address = it.getString(addressIndex) ?: "Unknown"
+                val body = it.getString(bodyIndex) ?: ""
+                val date = it.getLong(dateIndex)
+                val id = it.getLong(idIndex)
+                val type = it.getInt(typeIndex)
+                val read = it.getInt(readIndex)
+
+                val message = SmsMessage(id, address, body, date, type, read)
+                conversations.getOrPut(address) { mutableListOf() }.add(message)
+            }
+        }
+
+        return conversations.map { (address, messages) ->
+            val lastMsg = messages.first() // Sorted by default sort order (descending date)
+            val contactName = getContactName(address)
+            Conversation(
+                address = address,
+                contactName = contactName,
+                lastMessage = lastMsg.body,
+                lastMessageDate = lastMsg.date,
+                unreadCount = messages.count { it.read == 0 && it.type == Telephony.Sms.MESSAGE_TYPE_INBOX }
+            )
+        }.sortedByDescending { it.lastMessageDate }
+    }
+
+    fun getMessagesForAddress(address: String): List<SmsMessage> {
+        val messages = mutableListOf<SmsMessage>()
+        val contentResolver: ContentResolver = context.contentResolver
+        
+        val cursor: Cursor? = contentResolver.query(
+            Telephony.Sms.CONTENT_URI,
+            arrayOf(
+                Telephony.Sms._ID,
+                Telephony.Sms.ADDRESS,
+                Telephony.Sms.BODY,
+                Telephony.Sms.DATE,
+                Telephony.Sms.TYPE,
+                Telephony.Sms.READ
+            ),
+            "${Telephony.Sms.ADDRESS} = ?",
+            arrayOf(address),
+            "${Telephony.Sms.DATE} ASC"
+        )
+
+        cursor?.use {
+            val bodyIndex = it.getColumnIndex(Telephony.Sms.BODY)
+            val dateIndex = it.getColumnIndex(Telephony.Sms.DATE)
+            val idIndex = it.getColumnIndex(Telephony.Sms._ID)
+            val typeIndex = it.getColumnIndex(Telephony.Sms.TYPE)
+            val readIndex = it.getColumnIndex(Telephony.Sms.READ)
+
+            while (it.moveToNext()) {
+                val body = it.getString(bodyIndex) ?: ""
+                val date = it.getLong(dateIndex)
+                val id = it.getLong(idIndex)
+                val type = it.getInt(typeIndex)
+                val read = it.getInt(readIndex)
+
+                messages.add(SmsMessage(id, address, body, date, type, read))
+            }
+        }
+        return messages
+    }
+
+    private fun getContactName(phoneNumber: String): String? {
+        val uri = Uri.withAppendedPath(
+            ContactsContract.PhoneLookup.CONTENT_FILTER_URI,
+            Uri.encode(phoneNumber)
+        )
+        val projection = arrayOf(ContactsContract.PhoneLookup.DISPLAY_NAME)
+        val cursor = context.contentResolver.query(uri, projection, null, null, null)
+        
+        cursor?.use {
+            if (it.moveToFirst()) {
+                val index = it.getColumnIndex(ContactsContract.PhoneLookup.DISPLAY_NAME)
+                if (index != -1) {
+                    return it.getString(index)
+                }
+            }
+        }
+        return null
+    }
+}
