@@ -9,6 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -32,6 +33,13 @@ fun ConversationDetailScreen(
 
     LaunchedEffect(address) {
         viewModel.loadMessages(address)
+    }
+
+    DisposableEffect(address) {
+        viewModel.setCurrentAddress(address)
+        onDispose {
+            viewModel.setCurrentAddress(null)
+        }
     }
 
     Scaffold(
