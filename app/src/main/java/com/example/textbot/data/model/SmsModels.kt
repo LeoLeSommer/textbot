@@ -1,4 +1,4 @@
-package com.example.textbot.data
+package com.example.textbot.data.model
 
 data class SmsMessage(
     val id: Long,

@@ -1,24 +1,15 @@
-package com.example.textbot.ui
+package com.example.textbot.ui.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.*
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.example.textbot.data.SmsMessage
+import com.example.textbot.data.model.SmsMessage
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -60,64 +51,6 @@ fun groupMessages(messages: List<SmsMessage>): List<GroupedSms> {
         grouped.add(GroupedSms(current, position, isEnd))
     }
     return grouped
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun ConversationDetailScreen(
-    address: String,
-    viewModel: SmsViewModel,
-    onBackClick: () -> Unit
-) {
-    val messages by viewModel.messages.collectAsState()
-    val isLoading by viewModel.loading.collectAsState()
-
-    LaunchedEffect(address) {
-        viewModel.loadMessages(address)
-    }
-
-    DisposableEffect(address) {
-        viewModel.setCurrentAddress(address)
-        onDispose {
-            viewModel.setCurrentAddress(null)
-        }
-    }
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(address) },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                )
-            )
-        }
-    ) { padding ->
-        if (isLoading && messages.isEmpty()) {
-            Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-            }
-        } else {
-            val groupedMessages = remember(messages) { groupMessages(messages) }
-            LazyColumn(
-                modifier = Modifier
-                    .padding(padding)
-                    .fillMaxSize(),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(2.dp) // Reduced spacing for grouped messages
-            ) {
-                items(groupedMessages) { groupedSms ->
-                    MessageBubble(groupedSms)
-                }
-            }
-        }
-    }
 }
 
 @Composable
@@ -176,7 +109,7 @@ fun MessageBubble(groupedSms: GroupedSms) {
     }
 }
 
-fun formatDateTime(timeInMillis: Long): String {
+private fun formatDateTime(timeInMillis: Long): String {
     val formatter = SimpleDateFormat("dd MMM, HH:mm", Locale.getDefault())
     return formatter.format(Date(timeInMillis))
 }

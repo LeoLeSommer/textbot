@@ -1,4 +1,4 @@
-package com.example.textbot.data
+package com.example.textbot.data.repository
 
 import android.content.ContentResolver
 import android.content.Context
@@ -6,7 +6,8 @@ import android.database.Cursor
 import android.net.Uri
 import android.provider.ContactsContract
 import android.provider.Telephony
-import android.util.Log
+import com.example.textbot.data.model.Conversation
+import com.example.textbot.data.model.SmsMessage
 
 class SmsRepository(private val context: Context) {
 

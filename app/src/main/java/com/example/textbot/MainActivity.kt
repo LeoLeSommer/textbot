@@ -22,9 +22,9 @@ import androidx.core.content.ContextCompat
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.textbot.ui.ConversationDetailScreen
-import com.example.textbot.ui.ConversationListScreen
-import com.example.textbot.ui.SmsViewModel
+import com.example.textbot.ui.screens.ConversationDetailScreen
+import com.example.textbot.ui.screens.ConversationListScreen
+import com.example.textbot.ui.viewmodel.SmsViewModel
 import com.example.textbot.ui.theme.TextBotTheme
 
 class MainActivity : ComponentActivity() {

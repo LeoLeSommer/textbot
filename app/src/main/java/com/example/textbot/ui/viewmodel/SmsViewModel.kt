@@ -1,11 +1,11 @@
-package com.example.textbot.ui
+package com.example.textbot.ui.viewmodel
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.textbot.data.Conversation
-import com.example.textbot.data.SmsMessage
-import com.example.textbot.data.SmsRepository
+import com.example.textbot.data.model.Conversation
+import com.example.textbot.data.model.SmsMessage
+import com.example.textbot.data.repository.SmsRepository
 import android.database.ContentObserver
 import android.net.Uri
 import android.os.Handler

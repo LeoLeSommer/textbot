@@ -1,67 +1,20 @@
-package com.example.textbot.ui
+package com.example.textbot.ui.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.example.textbot.data.Conversation
+import com.example.textbot.data.model.Conversation
 import java.text.SimpleDateFormat
 import java.util.*
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun ConversationListScreen(
-    viewModel: SmsViewModel,
-    onConversationClick: (String) -> Unit
-) {
-    val conversations by viewModel.conversations.collectAsState()
-    val isLoading by viewModel.loading.collectAsState()
-
-    LaunchedEffect(Unit) {
-        viewModel.loadConversations()
-    }
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Messages") },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                )
-            )
-        }
-    ) { padding ->
-        if (isLoading && conversations.isEmpty()) {
-            Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-            }
-        } else {
-            LazyColumn(modifier = Modifier.padding(padding).fillMaxSize()) {
-                items(conversations) { conversation ->
-                    ConversationItem(conversation) {
-                        onConversationClick(conversation.address)
-                    }
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Color.LightGray.copy(alpha = 0.5f))
-                }
-            }
-        }
-    }
-}
 
 @Composable
 fun ConversationItem(conversation: Conversation, onClick: () -> Unit) {
@@ -137,7 +90,7 @@ fun ConversationItem(conversation: Conversation, onClick: () -> Unit) {
     }
 }
 
-fun formatTime(timeInMillis: Long): String {
+private fun formatTime(timeInMillis: Long): String {
     val formatter = SimpleDateFormat("HH:mm", Locale.getDefault())
     val date = Date(timeInMillis)
     return formatter.format(date)
