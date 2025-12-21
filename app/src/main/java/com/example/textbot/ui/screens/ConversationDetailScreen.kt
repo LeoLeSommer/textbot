@@ -6,6 +6,7 @@ import android.provider.ContactsContract
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Call
@@ -173,16 +174,37 @@ fun ConversationDetailScreen(
                 CircularProgressIndicator()
             }
         } else {
-            val groupedMessages = remember(messages) { groupMessages(messages) }
+            val groupedMessages = remember(messages) { groupMessages(messages).reversed() }
+            val listState = rememberLazyListState()
+
+            // Auto-scroll to index 0 (visual bottom) when new messages arrive
+            LaunchedEffect(groupedMessages.firstOrNull()?.message?.id) {
+                if (groupedMessages.isNotEmpty()) {
+                    val lastVisibleItemIndex = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == 0 }
+                    val isAtBottom = lastVisibleItemIndex != null
+                    
+                    if (isAtBottom) {
+                        listState.animateScrollToItem(0)
+                    }
+                }
+            }
+
             LazyColumn(
+                state = listState,
+                reverseLayout = true,
                 modifier = Modifier
                     .padding(padding)
                     .fillMaxSize(),
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
-                items(groupedMessages) { groupedSms ->
-                    MessageBubble(groupedSms)
+                items(
+                    items = groupedMessages,
+                    key = { it.message.id }
+                ) { groupedSms ->
+                    Box(modifier = Modifier.animateItem()) {
+                        MessageBubble(groupedSms)
+                    }
                 }
             }
         }
