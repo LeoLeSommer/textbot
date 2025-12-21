@@ -132,9 +132,9 @@ class SmsRepository(private val context: Context) {
         return messages
     }
 
-    private data class ContactInfo(val name: String?, val lookupUri: String?, val photoUri: String?)
+    data class ContactInfo(val name: String?, val lookupUri: String?, val photoUri: String?)
 
-    private fun getContactInfo(phoneNumber: String): ContactInfo {
+    fun getContactInfo(phoneNumber: String): ContactInfo {
         val uri = Uri.withAppendedPath(
             ContactsContract.PhoneLookup.CONTENT_FILTER_URI,
             Uri.encode(phoneNumber)
@@ -168,5 +168,14 @@ class SmsRepository(private val context: Context) {
             }
         }
         return ContactInfo(null, null, null)
+    }
+
+    fun getThreadIdForAddress(address: String): Long? {
+        return try {
+            Telephony.Threads.getOrCreateThreadId(context, address)
+        } catch (e: Exception) {
+            Log.e("SmsRepository", "Error getting thread ID for address: $address", e)
+            null
+        }
     }
 }

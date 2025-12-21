@@ -49,7 +49,8 @@ class MainActivity : ComponentActivity() {
                 var permissionsGranted by remember {
                     mutableStateOf(
                         hasPermission(Manifest.permission.READ_SMS) &&
-                                hasPermission(Manifest.permission.READ_CONTACTS)
+                                hasPermission(Manifest.permission.READ_CONTACTS) &&
+                                (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU || hasPermission(Manifest.permission.POST_NOTIFICATIONS))
                     )
                 }
 
@@ -89,14 +90,16 @@ class MainActivity : ComponentActivity() {
 
                 LaunchedEffect(Unit) {
                     if (!permissionsGranted) {
-                        launcher.launch(
-                            arrayOf(
-                                Manifest.permission.READ_SMS,
-                                Manifest.permission.READ_CONTACTS,
-                                Manifest.permission.RECEIVE_SMS,
-                                Manifest.permission.SEND_SMS
-                            )
+                        val permissions = mutableListOf(
+                            Manifest.permission.READ_SMS,
+                            Manifest.permission.READ_CONTACTS,
+                            Manifest.permission.RECEIVE_SMS,
+                            Manifest.permission.SEND_SMS
                         )
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            permissions.add(Manifest.permission.POST_NOTIFICATIONS)
+                        }
+                        launcher.launch(permissions.toTypedArray())
                     } else {
                         checkDefaultSmsRole()
                     }
@@ -110,6 +113,14 @@ class MainActivity : ComponentActivity() {
 
                 if (permissionsGranted) {
                     val navController = rememberNavController()
+
+                    LaunchedEffect(intent) {
+                        val threadId = intent.getLongExtra("threadId", -1L)
+                        if (threadId != -1L) {
+                            navController.navigate("detail/$threadId")
+                        }
+                    }
+
                     NavHost(
                         navController = navController,
                         startDestination = "list",
