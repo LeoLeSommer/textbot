@@ -107,3 +107,4 @@ class SmsReceiver : BroadcastReceiver() {
         notificationManager.notify(threadId.hashCode(), notification)
     }
 }
+
