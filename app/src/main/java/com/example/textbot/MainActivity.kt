@@ -1,6 +1,8 @@
 package com.example.textbot
 
 import android.Manifest
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.app.role.RoleManager
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -38,7 +40,10 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        createNotificationChannel()
         enableEdgeToEdge()
+
         setContent {
             TextBotTheme {
                 var permissionsGranted by remember {
@@ -116,15 +121,15 @@ class MainActivity : ComponentActivity() {
                         composable("list") {
                             ConversationListScreen(
                                 viewModel = viewModel,
-                                onConversationClick = { address ->
-                                    navController.navigate("detail/$address")
+                                onConversationClick = { threadId ->
+                                    navController.navigate("detail/$threadId")
                                 }
                             )
                         }
-                        composable("detail/{address}") { backStackEntry ->
-                            val address = backStackEntry.arguments?.getString("address") ?: ""
+                        composable("detail/{threadId}") { backStackEntry ->
+                            val threadId = backStackEntry.arguments?.getString("threadId")?.toLongOrNull() ?: -1L
                             ConversationDetailScreen(
-                                address = address,
+                                threadId = threadId,
                                 viewModel = viewModel,
                                 onBackClick = { navController.popBackStack() }
                             )
@@ -141,5 +146,18 @@ class MainActivity : ComponentActivity() {
 
     private fun hasPermission(permission: String): Boolean {
         return ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
+    }
+
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val name = "SMS Notifications"
+            val descriptionText = "Notifications for incoming SMS messages"
+            val importance = NotificationManager.IMPORTANCE_HIGH
+            val channel = NotificationChannel("sms_notifications", name, importance).apply {
+                description = descriptionText
+            }
+            val notificationManager = getSystemService(NotificationManager::class.java)
+            notificationManager?.createNotificationChannel(channel)
+        }
     }
 }

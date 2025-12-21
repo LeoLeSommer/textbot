@@ -2,6 +2,7 @@ package com.example.textbot.data.model
 
 data class SmsMessage(
     val id: Long,
+    val threadId: Long,
     val address: String, // Phone number
     val body: String,
     val date: Long,
@@ -10,6 +11,7 @@ data class SmsMessage(
 )
 
 data class Conversation(
+    val threadId: Long,
     val address: String,
     val contactName: String?,
     val contactLookupUri: String?,

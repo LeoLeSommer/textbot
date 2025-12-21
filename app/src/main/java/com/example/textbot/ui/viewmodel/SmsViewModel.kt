@@ -29,7 +29,7 @@ class SmsViewModel(application: Application) : AndroidViewModel(application) {
     private val _loading = MutableStateFlow(false)
     val loading: StateFlow<Boolean> = _loading.asStateFlow()
 
-    private var currentAddress: String? = null
+    private var currentThreadId: Long? = null
 
     private val smsObserver = object : ContentObserver(Handler(Looper.getMainLooper())) {
         override fun onChange(selfChange: Boolean, uri: Uri?) {
@@ -37,7 +37,7 @@ class SmsViewModel(application: Application) : AndroidViewModel(application) {
             // Refresh conversations list
             loadConversations()
             // Refresh current conversation detail if visible
-            currentAddress?.let {
+            currentThreadId?.let {
                 markAsRead(it)
                 loadMessages(it)
             }
@@ -70,8 +70,8 @@ class SmsViewModel(application: Application) : AndroidViewModel(application) {
         getApplication<Application>().contentResolver.unregisterContentObserver(contactsObserver)
     }
 
-    fun setCurrentAddress(address: String?) {
-        currentAddress = address
+    fun setCurrentThreadId(threadId: Long?) {
+        currentThreadId = threadId
     }
 
     fun loadConversations() {
@@ -87,10 +87,10 @@ class SmsViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun markAsRead(address: String) {
+    fun markAsRead(threadId: Long) {
         viewModelScope.launch {
             try {
-                repository.markAsRead(address)
+                repository.markAsRead(threadId)
                 // Explicitly refresh conversations to update unread counts immediately
                 loadConversations()
             } catch (e: Exception) {
@@ -99,11 +99,11 @@ class SmsViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun loadMessages(address: String) {
+    fun loadMessages(threadId: Long) {
         viewModelScope.launch {
             _loading.value = true
             try {
-                _messages.value = repository.getMessagesForAddress(address)
+                _messages.value = repository.getMessagesForThread(threadId)
             } catch (e: Exception) {
                 // Handle error
             } finally {

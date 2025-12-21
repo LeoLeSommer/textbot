@@ -31,28 +31,30 @@ import com.example.textbot.ui.viewmodel.SmsViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ConversationDetailScreen(
-    address: String,
+    threadId: Long,
     viewModel: SmsViewModel,
     onBackClick: () -> Unit
 ) {
     val conversations by viewModel.conversations.collectAsState()
-    val contactName = remember(conversations, address) {
-        conversations.find { it.address == address }?.contactName
+    val conversation = remember(conversations, threadId) {
+        conversations.find { it.threadId == threadId }
     }
+    val contactName = conversation?.contactName
+    val address = conversation?.address ?: ""
     
     val messages by viewModel.messages.collectAsState()
     val isLoading by viewModel.loading.collectAsState()
 
-    LaunchedEffect(address) {
-        viewModel.loadMessages(address)
-        viewModel.markAsRead(address)
+    LaunchedEffect(threadId) {
+        viewModel.loadMessages(threadId)
+        viewModel.markAsRead(threadId)
     }
 
     val lifecycleOwner = LocalLifecycleOwner.current
-    DisposableEffect(lifecycleOwner, address) {
+    DisposableEffect(lifecycleOwner, threadId) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
-                viewModel.markAsRead(address)
+                viewModel.markAsRead(threadId)
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -61,10 +63,10 @@ fun ConversationDetailScreen(
         }
     }
 
-    DisposableEffect(address) {
-        viewModel.setCurrentAddress(address)
+    DisposableEffect(threadId) {
+        viewModel.setCurrentThreadId(threadId)
         onDispose {
-            viewModel.setCurrentAddress(null)
+            viewModel.setCurrentThreadId(null)
         }
     }
 
@@ -78,7 +80,6 @@ fun ConversationDetailScreen(
                             shape = CircleShape,
                             color = MaterialTheme.colorScheme.secondaryContainer
                         ) {
-                            val conversation = conversations.find { it.address == address }
                             if (conversation?.photoUri != null) {
                                 AsyncImage(
                                     model = conversation.photoUri,
@@ -137,7 +138,6 @@ fun ConversationDetailScreen(
                             expanded = showMenu,
                             onDismissRequest = { showMenu = false }
                         ) {
-                            val conversation = conversations.find { it.address == address }
                             val label = if (conversation?.contactLookupUri != null) {
                                 stringResource(R.string.action_view_contact)
                             } else {

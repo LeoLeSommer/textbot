@@ -13,12 +13,12 @@ import com.example.textbot.data.model.SmsMessage
 
 class SmsRepository(private val context: Context) {
     
-    fun markAsRead(address: String) {
+    fun markAsRead(threadId: Long) {
         val contentValues = ContentValues().apply {
             put(Telephony.Sms.READ, 1)
         }
-        val selection = "${Telephony.Sms.ADDRESS} = ? AND ${Telephony.Sms.READ} = 0"
-        val selectionArgs = arrayOf(address)
+        val selection = "${Telephony.Sms.THREAD_ID} = ? AND ${Telephony.Sms.READ} = 0"
+        val selectionArgs = arrayOf(threadId.toString())
         
         val rows = context.contentResolver.update(
             Telephony.Sms.CONTENT_URI,
@@ -26,17 +26,18 @@ class SmsRepository(private val context: Context) {
             selection,
             selectionArgs
         )
-        Log.d("SmsRepository", "Marked $rows messages as read for $address")
+        Log.d("SmsRepository", "Marked $rows messages as read for thread $threadId")
     }
 
     fun getAllConversations(): List<Conversation> {
-        val conversations = mutableMapOf<String, MutableList<SmsMessage>>()
+        val conversations = mutableMapOf<Long, MutableList<SmsMessage>>()
         val contentResolver: ContentResolver = context.contentResolver
         
         val cursor: Cursor? = contentResolver.query(
             Telephony.Sms.CONTENT_URI,
             arrayOf(
                 Telephony.Sms._ID,
+                Telephony.Sms.THREAD_ID,
                 Telephony.Sms.ADDRESS,
                 Telephony.Sms.BODY,
                 Telephony.Sms.DATE,
@@ -49,31 +50,34 @@ class SmsRepository(private val context: Context) {
         )
 
         cursor?.use {
+            val idIndex = it.getColumnIndex(Telephony.Sms._ID)
+            val threadIdIndex = it.getColumnIndex(Telephony.Sms.THREAD_ID)
             val addressIndex = it.getColumnIndex(Telephony.Sms.ADDRESS)
             val bodyIndex = it.getColumnIndex(Telephony.Sms.BODY)
             val dateIndex = it.getColumnIndex(Telephony.Sms.DATE)
-            val idIndex = it.getColumnIndex(Telephony.Sms._ID)
             val typeIndex = it.getColumnIndex(Telephony.Sms.TYPE)
             val readIndex = it.getColumnIndex(Telephony.Sms.READ)
 
             while (it.moveToNext()) {
+                val id = it.getLong(idIndex)
+                val threadId = it.getLong(threadIdIndex)
                 val address = it.getString(addressIndex) ?: "Unknown"
                 val body = it.getString(bodyIndex) ?: ""
                 val date = it.getLong(dateIndex)
-                val id = it.getLong(idIndex)
                 val type = it.getInt(typeIndex)
                 val read = it.getInt(readIndex)
 
-                val message = SmsMessage(id, address, body, date, type, read)
-                conversations.getOrPut(address) { mutableListOf() }.add(message)
+                val message = SmsMessage(id, threadId, address, body, date, type, read)
+                conversations.getOrPut(threadId) { mutableListOf() }.add(message)
             }
         }
 
-        return conversations.map { (address, messages) ->
+        return conversations.map { (threadId, messages) ->
             val lastMsg = messages.first() // Sorted by default sort order (descending date)
-            val contactInfo = getContactInfo(address)
+            val contactInfo = getContactInfo(lastMsg.address)
             Conversation(
-                address = address,
+                threadId = threadId,
+                address = lastMsg.address,
                 contactName = contactInfo.name,
                 contactLookupUri = contactInfo.lookupUri,
                 lastMessage = lastMsg.body,
@@ -84,7 +88,7 @@ class SmsRepository(private val context: Context) {
         }.sortedByDescending { it.lastMessageDate }
     }
 
-    fun getMessagesForAddress(address: String): List<SmsMessage> {
+    fun getMessagesForThread(threadId: Long): List<SmsMessage> {
         val messages = mutableListOf<SmsMessage>()
         val contentResolver: ContentResolver = context.contentResolver
         
@@ -92,32 +96,37 @@ class SmsRepository(private val context: Context) {
             Telephony.Sms.CONTENT_URI,
             arrayOf(
                 Telephony.Sms._ID,
+                Telephony.Sms.THREAD_ID,
                 Telephony.Sms.ADDRESS,
                 Telephony.Sms.BODY,
                 Telephony.Sms.DATE,
                 Telephony.Sms.TYPE,
                 Telephony.Sms.READ
             ),
-            "${Telephony.Sms.ADDRESS} = ?",
-            arrayOf(address),
+            "${Telephony.Sms.THREAD_ID} = ?",
+            arrayOf(threadId.toString()),
             "${Telephony.Sms.DATE} ASC"
         )
 
         cursor?.use {
+            val idIndex = it.getColumnIndex(Telephony.Sms._ID)
+            val threadIdIndex = it.getColumnIndex(Telephony.Sms.THREAD_ID)
+            val addressIndex = it.getColumnIndex(Telephony.Sms.ADDRESS)
             val bodyIndex = it.getColumnIndex(Telephony.Sms.BODY)
             val dateIndex = it.getColumnIndex(Telephony.Sms.DATE)
-            val idIndex = it.getColumnIndex(Telephony.Sms._ID)
             val typeIndex = it.getColumnIndex(Telephony.Sms.TYPE)
             val readIndex = it.getColumnIndex(Telephony.Sms.READ)
 
             while (it.moveToNext()) {
+                val id = it.getLong(idIndex)
+                val tId = it.getLong(threadIdIndex)
+                val address = it.getString(addressIndex) ?: ""
                 val body = it.getString(bodyIndex) ?: ""
                 val date = it.getLong(dateIndex)
-                val id = it.getLong(idIndex)
                 val type = it.getInt(typeIndex)
                 val read = it.getInt(readIndex)
 
-                messages.add(SmsMessage(id, address, body, date, type, read))
+                messages.add(SmsMessage(id, tId, address, body, date, type, read))
             }
         }
         return messages

@@ -25,7 +25,7 @@ import com.example.textbot.ui.viewmodel.SmsViewModel
 @Composable
 fun ConversationListScreen(
     viewModel: SmsViewModel,
-    onConversationClick: (String) -> Unit
+    onConversationClick: (Long) -> Unit
 ) {
     val conversations by viewModel.conversations.collectAsState()
     val isLoading by viewModel.loading.collectAsState()
@@ -62,7 +62,7 @@ fun ConversationListScreen(
             LazyColumn(modifier = Modifier.padding(padding).fillMaxSize()) {
                 items(conversations) { conversation ->
                     ConversationItem(conversation) {
-                        onConversationClick(conversation.address)
+                        onConversationClick(conversation.threadId)
                     }
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Color.LightGray.copy(alpha = 0.5f))
                 }
