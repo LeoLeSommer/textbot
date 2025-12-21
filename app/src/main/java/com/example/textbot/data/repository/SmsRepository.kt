@@ -78,7 +78,8 @@ class SmsRepository(private val context: Context) {
                 contactLookupUri = contactInfo.lookupUri,
                 lastMessage = lastMsg.body,
                 lastMessageDate = lastMsg.date,
-                unreadCount = messages.count { it.read == 0 && it.type == Telephony.Sms.MESSAGE_TYPE_INBOX }
+                unreadCount = messages.count { it.read == 0 && it.type == Telephony.Sms.MESSAGE_TYPE_INBOX },
+                photoUri = contactInfo.photoUri
             )
         }.sortedByDescending { it.lastMessageDate }
     }
@@ -122,7 +123,7 @@ class SmsRepository(private val context: Context) {
         return messages
     }
 
-    private data class ContactInfo(val name: String?, val lookupUri: String?)
+    private data class ContactInfo(val name: String?, val lookupUri: String?, val photoUri: String?)
 
     private fun getContactInfo(phoneNumber: String): ContactInfo {
         val uri = Uri.withAppendedPath(
@@ -132,7 +133,8 @@ class SmsRepository(private val context: Context) {
         val projection = arrayOf(
             ContactsContract.PhoneLookup.DISPLAY_NAME,
             ContactsContract.PhoneLookup.LOOKUP_KEY,
-            ContactsContract.PhoneLookup._ID
+            ContactsContract.PhoneLookup._ID,
+            ContactsContract.PhoneLookup.PHOTO_THUMBNAIL_URI
         )
         val cursor = context.contentResolver.query(uri, projection, null, null, null)
         
@@ -142,17 +144,20 @@ class SmsRepository(private val context: Context) {
                 val lookupKeyIndex = it.getColumnIndex(ContactsContract.PhoneLookup.LOOKUP_KEY)
                 val idIndex = it.getColumnIndex(ContactsContract.PhoneLookup._ID)
                 
+                val photoUriIndex = it.getColumnIndex(ContactsContract.PhoneLookup.PHOTO_THUMBNAIL_URI)
+                
                 val name = if (nameIndex != -1) it.getString(nameIndex) else null
                 val lookupKey = if (lookupKeyIndex != -1) it.getString(lookupKeyIndex) else null
                 val id = if (idIndex != -1) it.getLong(idIndex) else null
+                val photoUri = if (photoUriIndex != -1) it.getString(photoUriIndex) else null
                 
                 val lookupUri = if (lookupKey != null && id != null) {
                     ContactsContract.Contacts.getLookupUri(id, lookupKey).toString()
                 } else null
                 
-                return ContactInfo(name, lookupUri)
+                return ContactInfo(name, lookupUri, photoUri)
             }
         }
-        return ContactInfo(null, null)
+        return ContactInfo(null, null, null)
     }
 }

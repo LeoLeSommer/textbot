@@ -15,5 +15,6 @@ data class Conversation(
     val contactLookupUri: String?,
     val lastMessage: String,
     val lastMessageDate: Long,
-    val unreadCount: Int = 0
+    val unreadCount: Int = 0,
+    val photoUri: String? = null
 )

@@ -17,6 +17,11 @@ import java.text.DateFormat
 import java.text.SimpleDateFormat
 import java.util.*
 
+import coil3.compose.AsyncImage
+import androidx.compose.ui.layout.ContentScale
+
+import androidx.compose.foundation.shape.CircleShape
+
 @Composable
 fun ConversationItem(conversation: Conversation, onClick: () -> Unit) {
     Row(
@@ -28,15 +33,28 @@ fun ConversationItem(conversation: Conversation, onClick: () -> Unit) {
     ) {
         Surface(
             modifier = Modifier.size(48.dp),
-            shape = MaterialTheme.shapes.medium,
+            shape = CircleShape,
             color = MaterialTheme.colorScheme.secondaryContainer
         ) {
-            Icon(
-                imageVector = Icons.Default.Person,
-                contentDescription = null,
-                modifier = Modifier.padding(12.dp),
-                tint = MaterialTheme.colorScheme.onSecondaryContainer
-            )
+            if (conversation.photoUri != null) {
+                AsyncImage(
+                    model = conversation.photoUri,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Box(contentAlignment = Alignment.Center) {
+                    val initial = (conversation.contactName ?: conversation.address)
+                        .trimStart('+')
+                        .firstOrNull()?.toString()?.uppercase() ?: "?"
+                    Text(
+                        text = initial,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                }
+            }
         }
         
         Spacer(modifier = Modifier.width(16.dp))

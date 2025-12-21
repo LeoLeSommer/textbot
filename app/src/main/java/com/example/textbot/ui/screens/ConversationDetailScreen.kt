@@ -14,12 +14,15 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.foundation.shape.CircleShape
+import coil3.compose.AsyncImage
 import com.example.textbot.R
 import com.example.textbot.ui.components.MessageBubble
 import com.example.textbot.ui.components.groupMessages
@@ -69,17 +72,42 @@ fun ConversationDetailScreen(
         topBar = {
             TopAppBar(
                 title = { 
-                    Column {
-                        Text(
-                            text = contactName ?: address,
-                            style = MaterialTheme.typography.titleLarge
-                        )
-                        if (contactName != null) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Surface(
+                            modifier = Modifier.size(36.dp),
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.secondaryContainer
+                        ) {
+                            val conversation = conversations.find { it.address == address }
+                            if (conversation?.photoUri != null) {
+                                AsyncImage(
+                                    model = conversation.photoUri,
+                                    contentDescription = null,
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.Call,
+                                    contentDescription = null,
+                                    modifier = Modifier.padding(8.dp),
+                                    tint = MaterialTheme.colorScheme.onSecondaryContainer
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
                             Text(
-                                text = address,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                text = contactName ?: address,
+                                style = MaterialTheme.typography.titleLarge
                             )
+                            if (contactName != null) {
+                                Text(
+                                    text = address,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
                     }
                 },
