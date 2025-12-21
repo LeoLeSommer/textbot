@@ -10,6 +10,7 @@ import android.database.ContentObserver
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
+import android.provider.ContactsContract
 import android.provider.Telephony
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -42,17 +43,30 @@ class SmsViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    private val contactsObserver = object : ContentObserver(Handler(Looper.getMainLooper())) {
+        override fun onChange(selfChange: Boolean, uri: Uri?) {
+            super.onChange(selfChange, uri)
+            loadConversations()
+        }
+    }
+
     init {
         application.contentResolver.registerContentObserver(
             Telephony.Sms.CONTENT_URI,
             true,
             smsObserver
         )
+        application.contentResolver.registerContentObserver(
+            ContactsContract.Contacts.CONTENT_URI,
+            true,
+            contactsObserver
+        )
     }
 
     override fun onCleared() {
         super.onCleared()
         getApplication<Application>().contentResolver.unregisterContentObserver(smsObserver)
+        getApplication<Application>().contentResolver.unregisterContentObserver(contactsObserver)
     }
 
     fun setCurrentAddress(address: String?) {

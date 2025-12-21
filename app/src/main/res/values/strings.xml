@@ -3,4 +3,8 @@
     <string name="title_messages">Messages</string>
     <string name="content_description_back">Back</string>
     <string name="error_permissions_required">Permissions required to show messages</string>
+    <string name="action_call">Call</string>
+    <string name="action_more">More options</string>
+    <string name="action_add_to_contacts">Add to contacts</string>
+    <string name="action_view_contact">View contact</string>
 </resources>

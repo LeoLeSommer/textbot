@@ -12,6 +12,7 @@ data class SmsMessage(
 data class Conversation(
     val address: String,
     val contactName: String?,
+    val contactLookupUri: String?,
     val lastMessage: String,
     val lastMessageDate: Long,
     val unreadCount: Int = 0

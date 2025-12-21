@@ -53,10 +53,11 @@ class SmsRepository(private val context: Context) {
 
         return conversations.map { (address, messages) ->
             val lastMsg = messages.first() // Sorted by default sort order (descending date)
-            val contactName = getContactName(address)
+            val contactInfo = getContactInfo(address)
             Conversation(
                 address = address,
-                contactName = contactName,
+                contactName = contactInfo.name,
+                contactLookupUri = contactInfo.lookupUri,
                 lastMessage = lastMsg.body,
                 lastMessageDate = lastMsg.date,
                 unreadCount = messages.count { it.read == 0 && it.type == Telephony.Sms.MESSAGE_TYPE_INBOX }
@@ -103,22 +104,37 @@ class SmsRepository(private val context: Context) {
         return messages
     }
 
-    private fun getContactName(phoneNumber: String): String? {
+    private data class ContactInfo(val name: String?, val lookupUri: String?)
+
+    private fun getContactInfo(phoneNumber: String): ContactInfo {
         val uri = Uri.withAppendedPath(
             ContactsContract.PhoneLookup.CONTENT_FILTER_URI,
             Uri.encode(phoneNumber)
         )
-        val projection = arrayOf(ContactsContract.PhoneLookup.DISPLAY_NAME)
+        val projection = arrayOf(
+            ContactsContract.PhoneLookup.DISPLAY_NAME,
+            ContactsContract.PhoneLookup.LOOKUP_KEY,
+            ContactsContract.PhoneLookup._ID
+        )
         val cursor = context.contentResolver.query(uri, projection, null, null, null)
         
         cursor?.use {
             if (it.moveToFirst()) {
-                val index = it.getColumnIndex(ContactsContract.PhoneLookup.DISPLAY_NAME)
-                if (index != -1) {
-                    return it.getString(index)
-                }
+                val nameIndex = it.getColumnIndex(ContactsContract.PhoneLookup.DISPLAY_NAME)
+                val lookupKeyIndex = it.getColumnIndex(ContactsContract.PhoneLookup.LOOKUP_KEY)
+                val idIndex = it.getColumnIndex(ContactsContract.PhoneLookup._ID)
+                
+                val name = if (nameIndex != -1) it.getString(nameIndex) else null
+                val lookupKey = if (lookupKeyIndex != -1) it.getString(lookupKeyIndex) else null
+                val id = if (idIndex != -1) it.getLong(idIndex) else null
+                
+                val lookupUri = if (lookupKey != null && id != null) {
+                    ContactsContract.Contacts.getLookupUri(id, lookupKey).toString()
+                } else null
+                
+                return ContactInfo(name, lookupUri)
             }
         }
-        return null
+        return ContactInfo(null, null)
     }
 }
