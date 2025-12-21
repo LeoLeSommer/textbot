@@ -9,7 +9,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.example.textbot.R
 import com.example.textbot.ui.components.MessageBubble
 import com.example.textbot.ui.components.groupMessages
 import com.example.textbot.ui.viewmodel.SmsViewModel
@@ -41,7 +43,7 @@ fun ConversationDetailScreen(
                 title = { Text(address) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.content_description_back))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(

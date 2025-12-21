@@ -13,6 +13,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.textbot.data.model.Conversation
+import java.text.DateFormat
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -91,7 +92,7 @@ fun ConversationItem(conversation: Conversation, onClick: () -> Unit) {
 }
 
 private fun formatTime(timeInMillis: Long): String {
-    val formatter = SimpleDateFormat("HH:mm", Locale.getDefault())
+    val formatter = DateFormat.getTimeInstance(DateFormat.SHORT, Locale.getDefault())
     val date = Date(timeInMillis)
     return formatter.format(date)
 }

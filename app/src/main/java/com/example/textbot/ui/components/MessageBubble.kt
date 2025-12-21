@@ -10,6 +10,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.textbot.data.model.SmsMessage
+import java.text.DateFormat
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -110,6 +111,6 @@ fun MessageBubble(groupedSms: GroupedSms) {
 }
 
 private fun formatDateTime(timeInMillis: Long): String {
-    val formatter = SimpleDateFormat("dd MMM, HH:mm", Locale.getDefault())
+    val formatter = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT, Locale.getDefault())
     return formatter.format(Date(timeInMillis))
 }

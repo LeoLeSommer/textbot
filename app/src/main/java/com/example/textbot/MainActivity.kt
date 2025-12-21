@@ -49,7 +49,7 @@ class MainActivity : ComponentActivity() {
                 ) { permissions ->
                     permissionsGranted = permissions.values.all { it }
                     if (!permissionsGranted) {
-                        Toast.makeText(this, "Permissions required to show messages", Toast.LENGTH_LONG).show()
+                        Toast.makeText(this, getString(R.string.error_permissions_required), Toast.LENGTH_LONG).show()
                     }
                 }
 

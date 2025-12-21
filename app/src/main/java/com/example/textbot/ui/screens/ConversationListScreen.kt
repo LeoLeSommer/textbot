@@ -11,7 +11,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.example.textbot.R
 import com.example.textbot.ui.components.ConversationItem
 import com.example.textbot.ui.viewmodel.SmsViewModel
 
@@ -31,7 +33,7 @@ fun ConversationListScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Messages") },
+                title = { Text(stringResource(R.string.title_messages)) },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,

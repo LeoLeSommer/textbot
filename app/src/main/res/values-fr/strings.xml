@@ -1,0 +1,6 @@
+<resources>
+    <string name="app_name">TextBot</string>
+    <string name="title_messages">Messages</string>
+    <string name="content_description_back">Retour</string>
+    <string name="error_permissions_required">Permissions requises pour afficher les messages</string>
+</resources>
