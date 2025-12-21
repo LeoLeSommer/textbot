@@ -38,6 +38,7 @@ class SmsViewModel(application: Application) : AndroidViewModel(application) {
             loadConversations()
             // Refresh current conversation detail if visible
             currentAddress?.let {
+                markAsRead(it)
                 loadMessages(it)
             }
         }
@@ -82,6 +83,18 @@ class SmsViewModel(application: Application) : AndroidViewModel(application) {
                 // Handle error
             } finally {
                 _loading.value = false
+            }
+        }
+    }
+
+    fun markAsRead(address: String) {
+        viewModelScope.launch {
+            try {
+                repository.markAsRead(address)
+                // Explicitly refresh conversations to update unread counts immediately
+                loadConversations()
+            } catch (e: Exception) {
+                // Handle error
             }
         }
     }

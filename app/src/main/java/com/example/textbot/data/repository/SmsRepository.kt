@@ -1,7 +1,9 @@
 package com.example.textbot.data.repository
 
 import android.content.ContentResolver
+import android.content.ContentValues
 import android.content.Context
+import android.util.Log
 import android.database.Cursor
 import android.net.Uri
 import android.provider.ContactsContract
@@ -10,6 +12,22 @@ import com.example.textbot.data.model.Conversation
 import com.example.textbot.data.model.SmsMessage
 
 class SmsRepository(private val context: Context) {
+    
+    fun markAsRead(address: String) {
+        val contentValues = ContentValues().apply {
+            put(Telephony.Sms.READ, 1)
+        }
+        val selection = "${Telephony.Sms.ADDRESS} = ? AND ${Telephony.Sms.READ} = 0"
+        val selectionArgs = arrayOf(address)
+        
+        val rows = context.contentResolver.update(
+            Telephony.Sms.CONTENT_URI,
+            contentValues,
+            selection,
+            selectionArgs
+        )
+        Log.d("SmsRepository", "Marked $rows messages as read for $address")
+    }
 
     fun getAllConversations(): List<Conversation> {
         val conversations = mutableMapOf<String, MutableList<SmsMessage>>()
