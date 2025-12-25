@@ -7,4 +7,6 @@
     <string name="action_more">More options</string>
     <string name="action_add_to_contacts">Add to contacts</string>
     <string name="action_view_contact">View contact</string>
+    <string name="placeholder_type_message">Type a message...</string>
+    <string name="action_send">Send</string>
 </resources>

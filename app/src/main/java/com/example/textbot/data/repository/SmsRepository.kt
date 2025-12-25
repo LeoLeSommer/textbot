@@ -1,17 +1,24 @@
 package com.example.textbot.data.repository
 
+import android.app.PendingIntent
 import android.content.ContentResolver
 import android.content.ContentValues
 import android.content.Context
+import android.content.Intent
+import android.os.Build
 import android.util.Log
 import android.database.Cursor
 import android.net.Uri
 import android.provider.ContactsContract
 import android.provider.Telephony
+import android.telephony.SmsManager
 import com.example.textbot.data.model.Conversation
 import com.example.textbot.data.model.SmsMessage
 
 class SmsRepository(private val context: Context) {
+    companion object {
+        const val SMS_SENT_ACTION = "com.example.textbot.SMS_SENT"
+    }
     
     fun markAsRead(threadId: Long) {
         val contentValues = ContentValues().apply {
@@ -176,6 +183,57 @@ class SmsRepository(private val context: Context) {
         } catch (e: Exception) {
             Log.e("SmsRepository", "Error getting thread ID for address: $address", e)
             null
+        }
+    }
+
+    fun sendMessage(address: String, body: String) {
+        try {
+            val smsManager: SmsManager = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                context.getSystemService(SmsManager::class.java)
+            } else {
+                @Suppress("DEPRECATION")
+                SmsManager.getDefault()
+            }
+
+            // 1. Insert into system "Outbox" database first (Sending state)
+            val values = ContentValues().apply {
+                put(Telephony.Sms.ADDRESS, address)
+                put(Telephony.Sms.BODY, body)
+                put(Telephony.Sms.DATE, System.currentTimeMillis())
+                put(Telephony.Sms.READ, 1)
+                put(Telephony.Sms.TYPE, Telephony.Sms.MESSAGE_TYPE_OUTBOX)
+            }
+            val uri = context.contentResolver.insert(Telephony.Sms.Outbox.CONTENT_URI, values)
+            
+            // 2. Prepare PendingIntent for status callback
+            val sentIntent = PendingIntent.getBroadcast(
+                context,
+                uri.hashCode(),
+                Intent(SMS_SENT_ACTION).apply {
+                    data = uri
+                },
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            )
+
+            // 3. Send the SMS
+            smsManager.sendTextMessage(address, null, body, sentIntent, null)
+            
+            Log.d("SmsRepository", "Message inserted into outbox and sending triggered for $address")
+        } catch (e: Exception) {
+            Log.e("SmsRepository", "Failed to send SMS to $address", e)
+            throw e
+        }
+    }
+
+    fun updateMessageStatus(uri: Uri, type: Int) {
+        try {
+            val values = ContentValues().apply {
+                put(Telephony.Sms.TYPE, type)
+            }
+            context.contentResolver.update(uri, values, null, null)
+            Log.d("SmsRepository", "Message $uri status updated to $type")
+        } catch (e: Exception) {
+            Log.e("SmsRepository", "Failed to update status for $uri", e)
         }
     }
 }

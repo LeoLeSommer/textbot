@@ -5,6 +5,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.Icon
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Done
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Warning
+import android.provider.Telephony
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -24,6 +30,14 @@ data class GroupedSms(
     val showTimestamp: Boolean
 )
 
+// Helper to check if a message type corresponds to the user (sent/sending/failed)
+fun isMessageFromMe(type: Int): Boolean {
+    return type == Telephony.Sms.MESSAGE_TYPE_SENT ||
+           type == Telephony.Sms.MESSAGE_TYPE_OUTBOX ||
+           type == Telephony.Sms.MESSAGE_TYPE_FAILED ||
+           type == Telephony.Sms.MESSAGE_TYPE_QUEUED
+}
+
 fun groupMessages(messages: List<SmsMessage>): List<GroupedSms> {
     if (messages.isEmpty()) return emptyList()
     val grouped = mutableListOf<GroupedSms>()
@@ -34,13 +48,14 @@ fun groupMessages(messages: List<SmsMessage>): List<GroupedSms> {
         val prev = if (i > 0) messages[i - 1] else null
         val next = if (i < messages.size - 1) messages[i + 1] else null
 
-        val isPrevSameSender = prev != null && prev.type == current.type
+        // Check if messages occupy the same "side" (both me or both other)
+        val isPrevSameSide = prev != null && (isMessageFromMe(prev.type) == isMessageFromMe(current.type))
         val isPrevClose = prev != null && (current.date - prev.date) < threshold
-        val isStart = !isPrevSameSender || !isPrevClose
+        val isStart = !isPrevSameSide || !isPrevClose
 
-        val isNextSameSender = next != null && next.type == current.type
+        val isNextSameSide = next != null && (isMessageFromMe(next.type) == isMessageFromMe(current.type))
         val isNextClose = next != null && (next.date - current.date) < threshold
-        val isEnd = !isNextSameSender || !isNextClose
+        val isEnd = !isNextSameSide || !isNextClose
 
         val position = when {
             isStart && isEnd -> BubblePosition.SINGLE
@@ -57,7 +72,7 @@ fun groupMessages(messages: List<SmsMessage>): List<GroupedSms> {
 @Composable
 fun MessageBubble(groupedSms: GroupedSms) {
     val message = groupedSms.message
-    val isMe = message.type == 2 // Telephony.Sms.MESSAGE_TYPE_SENT
+    val isMe = isMessageFromMe(message.type)
     val alignment = if (isMe) Alignment.CenterEnd else Alignment.CenterStart
     val bgColor = if (isMe) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer
     val textColor = if (isMe) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSecondaryContainer
@@ -100,12 +115,45 @@ fun MessageBubble(groupedSms: GroupedSms) {
             )
         }
         if (groupedSms.showTimestamp) {
-            Text(
-                text = formatDateTime(message.date),
-                style = MaterialTheme.typography.labelSmall,
+            Row(
                 modifier = Modifier.padding(top = 2.dp, bottom = 4.dp),
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = formatDateTime(message.date),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                if (isMe) {
+                    Spacer(modifier = Modifier.width(4.dp))
+                    when (message.type) {
+                        Telephony.Sms.MESSAGE_TYPE_OUTBOX -> {
+                            Icon(
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = null,
+                                modifier = Modifier.size(12.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Telephony.Sms.MESSAGE_TYPE_SENT -> {
+                            Icon(
+                                imageVector = Icons.Default.Done,
+                                contentDescription = null,
+                                modifier = Modifier.size(12.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        Telephony.Sms.MESSAGE_TYPE_FAILED -> {
+                            Icon(
+                                imageVector = Icons.Default.Warning,
+                                contentDescription = null,
+                                modifier = Modifier.size(12.dp),
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }

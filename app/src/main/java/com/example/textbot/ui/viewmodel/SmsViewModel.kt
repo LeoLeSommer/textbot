@@ -111,4 +111,15 @@ class SmsViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
     }
+
+    fun sendMessage(address: String, body: String) {
+        viewModelScope.launch {
+            try {
+                repository.sendMessage(address, body)
+                // The ContentObserver will automatically trigger loadMessages and loadConversations
+            } catch (e: Exception) {
+                // Handle error or notify UI
+            }
+        }
+    }
 }

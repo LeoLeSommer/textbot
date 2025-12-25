@@ -59,6 +59,14 @@
             </intent-filter>
         </receiver>
 
+        <receiver
+            android:name=".receiver.SmsStatusReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.example.textbot.SMS_SENT" />
+            </intent-filter>
+        </receiver>
+
         <service
             android:name=".service.HeadlessSmsSendService"
             android:exported="true"
