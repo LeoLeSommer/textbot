@@ -12,6 +12,7 @@ navigationCompose = "2.8.5"
 materialIconsExtended = "1.7.6"
 coil = "3.0.4"
 playServicesLocation = "21.0.1"
+androidSmsMms = "5.2.6"
 
 [libraries]
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
@@ -33,6 +34,7 @@ androidx-material-icons-extended = { group = "androidx.compose.material", name =
 coil-compose = { group = "io.coil-kt.coil3", name = "coil-compose", version.ref = "coil" }
 coil-network-okhttp = { group = "io.coil-kt.coil3", name = "coil-network-okhttp", version.ref = "coil" }
 play-services-location = { group = "com.google.android.gms", name = "play-services-location", version.ref = "playServicesLocation" }
+android-smsmms = { group = "com.klinkerapps", name = "android-smsmms", version.ref = "androidSmsMms" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

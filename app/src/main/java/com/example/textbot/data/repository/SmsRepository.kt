@@ -15,6 +15,9 @@ import android.telephony.SmsManager
 import com.example.textbot.data.model.Attachment
 import com.example.textbot.data.model.Conversation
 import com.example.textbot.data.model.SmsMessage
+import com.klinker.android.send_message.Message
+import com.klinker.android.send_message.Settings
+import com.klinker.android.send_message.Transaction
 
 class SmsRepository(private val context: Context) {
     companion object {
@@ -310,55 +313,33 @@ class SmsRepository(private val context: Context) {
         }
     }
 
-    fun sendMms(address: String, body: String, attachments: List<com.example.textbot.data.model.Attachment>) {
-        // Since PDU generation is very complex and usually involves third-party libraries 
-        // like 'mms-lib' or internal Android hidden APIs, and since the goal is to "add the possibility to join",
-        // I will implement a placeholder that inserts it into the system DB.
-        // NOTE: In a real app, you'd use a library to build the PDU and then use SmsManager.sendMultimediaMessage.
-        
+    fun sendMms(address: String, body: String, attachments: List<Attachment>) {
         try {
-            // Inserting into system MMS table
-            val values = ContentValues().apply {
-                put("address", address)
-                put("body", body)
-                put("date", System.currentTimeMillis() / 1000)
-                put("read", 1)
-                put("msg_box", 2) // Sent box
-                put("ct_t", "application/vnd.wap.multipart.related")
-                put("exp", 604800)
-                put("m_cls", "personal")
-                put("m_type", 128) // m-send-req
-                put("v", 18) // 1.2
+            val settings = Settings().apply {
+                useSystemSending = true // Let system handle APNs if possible on newer Android
             }
-            val mmsUri = context.contentResolver.insert(Uri.parse("content://mms"), values)
-            
-            mmsUri?.let { uri ->
-                val mmsId = uri.lastPathSegment?.toLong() ?: return
-                
-                // Add text part
-                if (body.isNotEmpty()) {
-                    val partValues = ContentValues().apply {
-                        put("mid", mmsId)
-                        put("ct", "text/plain")
-                        put("text", body)
-                    }
-                    context.contentResolver.insert(Uri.parse("content://mms/part"), partValues)
+
+            val transaction = Transaction(context, settings)
+            val message = Message(body, address)
+
+            attachments.forEach { attachment ->
+                // Basic conversion: Assuming file URI or content URI that can be read
+                // The library handles content URIs well.
+                try {
+                     val bytes = context.contentResolver.openInputStream(Uri.parse(attachment.uri))?.use { it.readBytes() }
+                     if (bytes != null) {
+                         message.addMedia(bytes, attachment.contentType)
+                     }
+                } catch (e: Exception) {
+                    Log.e("SmsRepository", "Failed to read attachment: \${attachment.uri}", e)
                 }
-                
-                // Add attachments parts
-                attachments.forEach { attachment ->
-                    val partValues = ContentValues().apply {
-                        put("mid", mmsId)
-                        put("ct", attachment.contentType)
-                        put("_data", attachment.uri) // This is simplified, usually requires copying to a local folder or using a URI
-                    }
-                    context.contentResolver.insert(Uri.parse("content://mms/part"), partValues)
-                }
-                
-                Log.d("SmsRepository", "MMS inserted into sent box: $uri")
             }
+
+            transaction.sendNewMessage(message, Transaction.NO_THREAD_ID)
+            Log.d("SmsRepository", "MMS sent via klinker library to $address")
+
         } catch (e: Exception) {
-            Log.e("SmsRepository", "Failed to insert MMS", e)
+            Log.e("SmsRepository", "Failed to send MMS", e)
         }
     }
 
