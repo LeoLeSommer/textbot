@@ -62,6 +62,16 @@
         "reveal": "always",
         "panel": "shared"
       }
+    },
+    {
+      "label": "Forward JDWP Port (5005)",
+      "type": "shell",
+      "command": "adb forward tcp:5005 jdwp:$(adb shell pidof -s com.example.textbot)",
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
     }
   ],
   "inputs": [

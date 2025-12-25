@@ -2,33 +2,33 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Debug Android (Install & Launch)",
-      "type": "node",
+      "name": "Android Debug (Launch)",
+      "type": "android",
       "request": "launch",
-      "preLaunchTask": "Install Debug",
-      "runtimeExecutable": "adb",
-      "runtimeArgs": [
-        "shell",
-        "am",
-        "start",
-        "-n",
-        "com.example.textbot/com.example.textbot.MainActivity"
-      ],
-      "skipFiles": ["<node_internals>/**"]
+      "processId": "com.example.textbot",
+      "preLaunchTask": "Install Debug"
     },
     {
-      "name": "Release Android (Install & Launch)",
-      "type": "node",
+      "name": "Android Debug (Launch) 2",
+      "type": "android",
       "request": "launch",
-      "preLaunchTask": "Install Release",
-      "runtimeExecutable": "adb",
-      "runtimeArgs": [
-        "shell",
-        "am",
-        "start",
-        "-n",
-        "com.example.textbot/com.example.textbot.MainActivity"
-      ]
+      "preLaunchTask": "Install Debug",
+      "apkFile": "${workspaceFolder}/app/build/outputs/apk/debug/app-debug.apk",
+      "appSrcRoot": "${workspaceFolder}/app/src/main/java"
+    },
+    {
+      "name": "Attach to Android Process",
+      "type": "android",
+      "request": "attach",
+      "processId": "com.example.textbot",
+      "appSrcRoot": "${workspaceFolder}/app/src/main/java"
+    },
+    {
+      "name": "Java Attach (JDWP)",
+      "type": "java",
+      "request": "attach",
+      "hostName": "localhost",
+      "port": 5005
     }
   ]
 }
