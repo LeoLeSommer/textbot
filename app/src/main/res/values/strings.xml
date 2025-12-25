@@ -33,4 +33,8 @@
     <string name="content_description_remove">Remove</string>
     <string name="content_description_image_attachment">Image attachment</string>
     <string name="unknown_sender">Unknown sender</string>
+    <string name="action_new_conversation">New conversation</string>
+    <string name="dialog_new_conversation_title">New Conversation</string>
+    <string name="label_phone_number">Phone number</string>
+    <string name="action_start_conversation">Start</string>
 </resources>

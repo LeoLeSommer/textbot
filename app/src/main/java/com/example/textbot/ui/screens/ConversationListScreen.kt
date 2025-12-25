@@ -4,10 +4,15 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -19,13 +24,15 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import com.example.textbot.R
 import com.example.textbot.ui.components.ConversationItem
+import com.example.textbot.ui.components.NewConversationDialog
 import com.example.textbot.ui.viewmodel.SmsViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ConversationListScreen(
     viewModel: SmsViewModel,
-    onConversationClick: (Long) -> Unit
+    onConversationClick: (Long) -> Unit,
+    onNewConversation: (String) -> Unit
 ) {
     val conversations by viewModel.conversations.collectAsState()
     val isLoading by viewModel.loading.collectAsState()
@@ -43,6 +50,9 @@ fun ConversationListScreen(
         }
     }
 
+    var showNewConversationDialog by remember { mutableStateOf(false) }
+
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -52,6 +62,14 @@ fun ConversationListScreen(
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
             )
+        },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { showNewConversationDialog = true },
+                containerColor = MaterialTheme.colorScheme.primary
+            ) {
+                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.action_new_conversation))
+            }
         }
     ) { padding ->
         if (isLoading && conversations.isEmpty()) {
@@ -69,4 +87,15 @@ fun ConversationListScreen(
             }
         }
     }
+
+    if (showNewConversationDialog) {
+        NewConversationDialog(
+            onDismiss = { showNewConversationDialog = false },
+            onConfirm = { phoneNumber ->
+                showNewConversationDialog = false
+                onNewConversation(phoneNumber)
+            }
+        )
+    }
 }
+

@@ -44,9 +44,19 @@ fun ConversationDetailScreen(
         conversations.find { it.threadId == threadId }
     }
     val contactName = conversation?.contactName
-    val address = conversation?.address ?: ""
-    
     val messages by viewModel.messages.collectAsState()
+    
+    // Get address from conversation, fallback to first message if empty
+    val address = remember(conversation, messages) {
+        val conversationAddress = conversation?.address ?: ""
+        if (conversationAddress.isBlank() && messages.isNotEmpty()) {
+            // Try to get address from the first message that has one
+            messages.firstOrNull { it.address.isNotBlank() }?.address ?: conversationAddress
+        } else {
+            conversationAddress
+        }
+    }
+    
     val isLoading by viewModel.loading.collectAsState()
 
     LaunchedEffect(threadId) {
@@ -210,7 +220,7 @@ fun ConversationDetailScreen(
             ) {
                 items(
                     items = groupedMessages,
-                    key = { it.message.id }
+                    key = { "${it.message.id}_${it.message.isMms}" }
                 ) { groupedSms ->
                     Box(modifier = Modifier.animateItem()) {
                         MessageBubble(groupedSms)

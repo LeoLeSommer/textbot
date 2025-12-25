@@ -181,7 +181,7 @@ class SmsRepository(private val context: Context) {
                 messages.add(SmsMessage(id, threadId, address, body, date, type, read, isMms, attachments))
             }
         }
-        return messages
+        return messages.sortedBy { it.date }
     }
 
     private fun getMmsAttachments(mmsId: Long): Pair<String, List<Attachment>> {
@@ -227,9 +227,15 @@ class SmsRepository(private val context: Context) {
         return ""
     }
 
+
     data class ContactInfo(val name: String?, val lookupUri: String?, val photoUri: String?)
 
     fun getContactInfo(phoneNumber: String): ContactInfo {
+        // Guard against empty phone numbers
+        if (phoneNumber.isBlank()) {
+            return ContactInfo(null, null, null)
+        }
+
         val uri = Uri.withAppendedPath(
             ContactsContract.PhoneLookup.CONTENT_FILTER_URI,
             Uri.encode(phoneNumber)

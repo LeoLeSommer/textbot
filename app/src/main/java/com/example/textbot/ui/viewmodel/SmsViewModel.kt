@@ -1,5 +1,7 @@
 package com.example.textbot.ui.viewmodel
 
+import android.util.Log
+
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -78,9 +80,12 @@ class SmsViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             _loading.value = true
             try {
-                _conversations.value = repository.getAllConversations()
+                Log.d("SmsViewModel", "Loading conversations...")
+                val conversations = repository.getAllConversations()
+                Log.d("SmsViewModel", "Loaded ${conversations.size} conversations")
+                _conversations.value = conversations
             } catch (e: Exception) {
-                // Handle error
+                Log.e("SmsViewModel", "Error loading conversations", e)
             } finally {
                 _loading.value = false
             }
@@ -128,5 +133,9 @@ class SmsViewModel(application: Application) : AndroidViewModel(application) {
                 // Handle error
             }
         }
+    }
+
+    fun getOrCreateThreadId(phoneNumber: String): Long? {
+        return repository.getThreadIdForAddress(phoneNumber)
     }
 }

@@ -134,6 +134,13 @@ class MainActivity : ComponentActivity() {
                                 viewModel = viewModel,
                                 onConversationClick = { threadId ->
                                     navController.navigate("detail/$threadId")
+                                },
+                                onNewConversation = { phoneNumber ->
+                                    // Get or create thread ID for the phone number
+                                    val threadId = viewModel.getOrCreateThreadId(phoneNumber)
+                                    if (threadId != null) {
+                                        navController.navigate("detail/$threadId")
+                                    }
                                 }
                             )
                         }
