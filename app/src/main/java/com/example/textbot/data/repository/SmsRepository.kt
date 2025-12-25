@@ -66,7 +66,7 @@ class SmsRepository(private val context: Context) {
                 if (conversations.containsKey(threadId)) continue // Already processed newest message for this thread
 
                 val id = if (idIndex != -1) it.getLong(idIndex) else 0L
-                val address = if (addressIndex != -1) it.getString(addressIndex) ?: "Unknown" else "Unknown"
+                val address = if (addressIndex != -1) it.getString(addressIndex) ?: "" else ""
                 var date = if (dateIndex != -1) it.getLong(dateIndex) else System.currentTimeMillis()
                 val type = if (typeIndex != -1) it.getInt(typeIndex) else 1
                 val read = if (readIndex != -1) it.getInt(readIndex) else 0
@@ -221,7 +221,7 @@ class SmsRepository(private val context: Context) {
                 return it.getString(it.getColumnIndex("address")) ?: ""
             }
         }
-        return "Unknown"
+        return ""
     }
 
     data class ContactInfo(val name: String?, val lookupUri: String?, val photoUri: String?)

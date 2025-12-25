@@ -23,6 +23,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.ui.res.stringResource
+import com.example.textbot.R
 import com.example.textbot.data.model.Attachment
 
 enum class BubblePosition {
@@ -118,7 +120,7 @@ fun MessageBubble(groupedSms: GroupedSms) {
                     if (attachment.contentType.startsWith("image/")) {
                         AsyncImage(
                             model = attachment.uri,
-                            contentDescription = "Image attachment",
+                            contentDescription = stringResource(R.string.content_description_image_attachment),
                             modifier = Modifier
                                 .padding(4.dp)
                                 .fillMaxWidth(0.7f)

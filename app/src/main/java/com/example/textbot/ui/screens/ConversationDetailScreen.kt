@@ -103,7 +103,7 @@ fun ConversationDetailScreen(
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
                             Text(
-                                text = contactName ?: address,
+                                text = contactName ?: address.ifEmpty { stringResource(R.string.unknown_sender) },
                                 style = MaterialTheme.typography.titleLarge
                             )
                             if (contactName != null) {

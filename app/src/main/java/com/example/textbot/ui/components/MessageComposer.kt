@@ -39,6 +39,7 @@ import com.example.textbot.R
 import com.example.textbot.data.model.Attachment
 import com.google.android.gms.location.LocationServices
 import java.io.File
+import java.text.DateFormat
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -101,7 +102,7 @@ fun MessageComposer(
         if (permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true || 
             permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true) {
             fetchLocation(context) { locationStr ->
-                messageText += "\nMa position: $locationStr"
+                messageText += "\n${context.getString(R.string.prefix_my_location)}$locationStr"
             }
         }
     }
@@ -150,7 +151,7 @@ fun MessageComposer(
                 IconButton(onClick = { showAttachmentMenu = !showAttachmentMenu }) {
                     Icon(
                         if (showAttachmentMenu) Icons.Default.Close else Icons.Default.Add,
-                        contentDescription = "Attach",
+                        contentDescription = stringResource(R.string.content_description_attach),
                         tint = MaterialTheme.colorScheme.primary
                     )
                 }
@@ -217,7 +218,7 @@ fun MessageComposer(
                 EventCreationDialog(
                     onDismiss = { showEventDialog = false },
                     onEventCreated = { title, location, dateStr, icsUri ->
-                        messageText += "\n📅 Rendez-vous: $title\n📍 $location\n⏰ $dateStr"
+                        messageText += "\n${context.getString(R.string.prefix_event_label)}$title\n📍 $location\n⏰ $dateStr"
                         if (icsUri != null) {
                             attachments.add(Attachment(icsUri.toString(), "text/calendar"))
                         }
@@ -237,30 +238,31 @@ fun EventCreationDialog(
     var title by remember { mutableStateOf("") }
     var location by remember { mutableStateOf("") }
     val calendar = Calendar.getInstance()
-    var dateStr by remember { mutableStateOf(SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(calendar.time)) }
+    val dateTimeFormatter = remember { DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault()) }
+    var dateStr by remember { mutableStateOf(dateTimeFormatter.format(calendar.time)) }
     val context = LocalContext.current
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Créer un événement") },
+        title = { Text(stringResource(R.string.dialog_create_event)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
-                    label = { Text("Titre de l'événement") },
+                    label = { Text(stringResource(R.string.label_event_title)) },
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
                     value = location,
                     onValueChange = { location = it },
-                    label = { Text("Lieu") },
+                    label = { Text(stringResource(R.string.label_event_location)) },
                     modifier = Modifier.fillMaxWidth()
                 )
                 OutlinedTextField(
                     value = dateStr,
                     onValueChange = { dateStr = it },
-                    label = { Text("Date (JJ/MM/AAAA HH:MM)") },
+                    label = { Text(stringResource(R.string.label_event_date)) },
                     modifier = Modifier.fillMaxWidth()
                 )
             }
@@ -292,12 +294,12 @@ fun EventCreationDialog(
                     }
                 }
             ) {
-                Text("Enregistrer et Partager")
+                Text(stringResource(R.string.action_save_and_share))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Annuler")
+                Text(stringResource(R.string.action_cancel))
             }
         }
     )
@@ -305,7 +307,7 @@ fun EventCreationDialog(
 
 private fun parseDate(dateStr: String): Long {
     return try {
-        SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).parse(dateStr)?.time ?: System.currentTimeMillis()
+        DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, Locale.getDefault()).parse(dateStr)?.time ?: System.currentTimeMillis()
     } catch (e: Exception) {
         System.currentTimeMillis()
     }
@@ -373,7 +375,7 @@ fun AttachmentPreview(attachment: Attachment, onRemove: () -> Unit) {
                 .size(24.dp)
                 .background(Color.Black.copy(alpha = 0.5f), CircleShape)
         ) {
-            Icon(Icons.Default.Close, contentDescription = "Remove", tint = Color.White, modifier = Modifier.size(16.dp))
+            Icon(Icons.Default.Close, contentDescription = stringResource(R.string.content_description_remove), tint = Color.White, modifier = Modifier.size(16.dp))
         }
     }
 }
@@ -386,12 +388,12 @@ fun AttachmentOptionsMenu(onOptionClick: (AttachmentOption) -> Unit) {
             .padding(16.dp),
         horizontalArrangement = Arrangement.SpaceAround
     ) {
-        AttachmentIcon(Icons.Default.Image, "Bouton galerie", AttachmentOption.IMAGE, onOptionClick)
-        AttachmentIcon(Icons.Default.PhotoCamera, "Bouton caméra", AttachmentOption.CAMERA, onOptionClick)
-        AttachmentIcon(Icons.Default.AttachFile, "Bouton fichier", AttachmentOption.FILE, onOptionClick)
-        AttachmentIcon(Icons.Default.LocationOn, "Bouton localisation", AttachmentOption.LOCATION, onOptionClick)
-        AttachmentIcon(Icons.Default.Person, "Bouton contact", AttachmentOption.CONTACT, onOptionClick)
-        AttachmentIcon(Icons.Default.Event, "Bouton événement", AttachmentOption.EVENT, onOptionClick)
+        AttachmentIcon(Icons.Default.Image, stringResource(R.string.attachment_image), AttachmentOption.IMAGE, onOptionClick)
+        AttachmentIcon(Icons.Default.PhotoCamera, stringResource(R.string.attachment_camera), AttachmentOption.CAMERA, onOptionClick)
+        AttachmentIcon(Icons.Default.AttachFile, stringResource(R.string.attachment_file), AttachmentOption.FILE, onOptionClick)
+        AttachmentIcon(Icons.Default.LocationOn, stringResource(R.string.attachment_location), AttachmentOption.LOCATION, onOptionClick)
+        AttachmentIcon(Icons.Default.Person, stringResource(R.string.attachment_contact), AttachmentOption.CONTACT, onOptionClick)
+        AttachmentIcon(Icons.Default.Event, stringResource(R.string.attachment_event), AttachmentOption.EVENT, onOptionClick)
     }
 }
 
@@ -407,7 +409,7 @@ fun AttachmentIcon(icon: ImageVector, label: String, option: AttachmentOption, o
             Icon(icon, contentDescription = label, tint = MaterialTheme.colorScheme.primary)
         }
         Text(
-            text = option.name.lowercase().capitalize(Locale.ROOT),
+            text = label,
             style = MaterialTheme.typography.labelSmall,
             modifier = Modifier.padding(top = 4.dp)
         )

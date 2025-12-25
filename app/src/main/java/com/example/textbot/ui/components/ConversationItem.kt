@@ -16,6 +16,8 @@ import com.example.textbot.data.model.Conversation
 import java.text.DateFormat
 import java.text.SimpleDateFormat
 import java.util.*
+import androidx.compose.ui.res.stringResource
+import com.example.textbot.R
 
 import coil3.compose.AsyncImage
 import androidx.compose.ui.layout.ContentScale
@@ -45,7 +47,7 @@ fun ConversationItem(conversation: Conversation, onClick: () -> Unit) {
                 )
             } else {
                 Box(contentAlignment = Alignment.Center) {
-                    val initial = (conversation.contactName ?: conversation.address)
+                    val initial = (conversation.contactName ?: conversation.address.ifEmpty { stringResource(R.string.unknown_sender) })
                         .trimStart('+')
                         .firstOrNull()?.toString()?.uppercase() ?: "?"
                     Text(
@@ -66,7 +68,7 @@ fun ConversationItem(conversation: Conversation, onClick: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = conversation.contactName ?: conversation.address,
+                    text = conversation.contactName ?: conversation.address.ifEmpty { stringResource(R.string.unknown_sender) },
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
