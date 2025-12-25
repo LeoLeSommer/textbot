@@ -172,54 +172,11 @@ fun ConversationDetailScreen(
             )
         },
         bottomBar = {
-            Surface(
-                tonalElevation = 3.dp,
-                shadowElevation = 8.dp,
-                color = MaterialTheme.colorScheme.surface
-            ) {
-                var messageText by remember { mutableStateOf("") }
-                
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
-                        .navigationBarsPadding()
-                        .imePadding(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    TextField(
-                        value = messageText,
-                        onValueChange = { messageText = it },
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(end = 8.dp),
-                        placeholder = { Text(stringResource(R.string.placeholder_type_message)) },
-                        colors = TextFieldDefaults.colors(
-                            unfocusedContainerColor = Color.Transparent,
-                            focusedContainerColor = Color.Transparent
-                        ),
-                        maxLines = 4
-                    )
-                    
-                    IconButton(
-                        onClick = {
-                            if (messageText.isNotBlank()) {
-                                viewModel.sendMessage(address, messageText)
-                                messageText = ""
-                            }
-                        },
-                        enabled = messageText.isNotBlank(),
-                        colors = IconButtonDefaults.iconButtonColors(
-                            contentColor = MaterialTheme.colorScheme.primary
-                        )
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.Send,
-                            contentDescription = stringResource(R.string.action_send)
-                        )
-                    }
+            com.example.textbot.ui.components.MessageComposer(
+                onSendMessage = { body, attachments ->
+                    viewModel.sendMessageWithAttachments(address, body, attachments)
                 }
-            }
+            )
         }
     ) { padding ->
         if (isLoading && messages.isEmpty()) {

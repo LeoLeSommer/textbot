@@ -113,12 +113,19 @@ class SmsViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun sendMessage(address: String, body: String) {
+        sendMessageWithAttachments(address, body, emptyList())
+    }
+
+    fun sendMessageWithAttachments(address: String, body: String, attachments: List<com.example.textbot.data.model.Attachment>) {
         viewModelScope.launch {
             try {
-                repository.sendMessage(address, body)
-                // The ContentObserver will automatically trigger loadMessages and loadConversations
+                if (attachments.isEmpty()) {
+                    repository.sendMessage(address, body)
+                } else {
+                    repository.sendMms(address, body, attachments)
+                }
             } catch (e: Exception) {
-                // Handle error or notify UI
+                // Handle error
             }
         }
     }

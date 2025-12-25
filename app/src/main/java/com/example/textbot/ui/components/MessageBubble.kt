@@ -16,9 +16,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.textbot.data.model.SmsMessage
-import java.text.DateFormat
-import java.text.SimpleDateFormat
 import java.util.*
+import java.text.DateFormat
+import coil3.compose.AsyncImage
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.layout.aspectRatio
+import com.example.textbot.data.model.Attachment
 
 enum class BubblePosition {
     START, MIDDLE, END, SINGLE
@@ -107,12 +112,33 @@ fun MessageBubble(groupedSms: GroupedSms) {
             shape = shape,
             tonalElevation = 2.dp
         ) {
-            Text(
-                text = message.body,
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                color = textColor,
-                style = MaterialTheme.typography.bodyMedium
-            )
+            Column {
+                // Render image attachments
+                message.attachments.forEach { attachment ->
+                    if (attachment.contentType.startsWith("image/")) {
+                        AsyncImage(
+                            model = attachment.uri,
+                            contentDescription = "Image attachment",
+                            modifier = Modifier
+                                .padding(4.dp)
+                                .fillMaxWidth(0.7f)
+                                .aspectRatio(1f)
+                                .clip(RoundedCornerShape(8.dp)),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+                }
+                
+                // Render text body if not empty
+                if (message.body.isNotEmpty()) {
+                    Text(
+                        text = message.body,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                        color = textColor,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
         }
         if (groupedSms.showTimestamp) {
             Row(

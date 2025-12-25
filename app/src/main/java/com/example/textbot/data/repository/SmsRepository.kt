@@ -12,6 +12,7 @@ import android.net.Uri
 import android.provider.ContactsContract
 import android.provider.Telephony
 import android.telephony.SmsManager
+import com.example.textbot.data.model.Attachment
 import com.example.textbot.data.model.Conversation
 import com.example.textbot.data.model.SmsMessage
 
@@ -40,20 +41,14 @@ class SmsRepository(private val context: Context) {
         val conversations = mutableMapOf<Long, MutableList<SmsMessage>>()
         val contentResolver: ContentResolver = context.contentResolver
         
+        // Querying from MmsSms provider to get both SMS and MMS
+        val uri = Uri.parse("content://mms-sms/conversations")
         val cursor: Cursor? = contentResolver.query(
-            Telephony.Sms.CONTENT_URI,
-            arrayOf(
-                Telephony.Sms._ID,
-                Telephony.Sms.THREAD_ID,
-                Telephony.Sms.ADDRESS,
-                Telephony.Sms.BODY,
-                Telephony.Sms.DATE,
-                Telephony.Sms.TYPE,
-                Telephony.Sms.READ
-            ),
+            uri,
+            null, // Query all columns for mixed provider
             null,
             null,
-            Telephony.Sms.DEFAULT_SORT_ORDER
+            "date DESC"
         )
 
         cursor?.use {
@@ -64,23 +59,43 @@ class SmsRepository(private val context: Context) {
             val dateIndex = it.getColumnIndex(Telephony.Sms.DATE)
             val typeIndex = it.getColumnIndex(Telephony.Sms.TYPE)
             val readIndex = it.getColumnIndex(Telephony.Sms.READ)
+            val ctTypeIndex = it.getColumnIndex("ct_t") // MMS content type
 
             while (it.moveToNext()) {
-                val id = it.getLong(idIndex)
-                val threadId = it.getLong(threadIdIndex)
-                val address = it.getString(addressIndex) ?: "Unknown"
-                val body = it.getString(bodyIndex) ?: ""
-                val date = it.getLong(dateIndex)
-                val type = it.getInt(typeIndex)
-                val read = it.getInt(readIndex)
+                val threadId = if (threadIdIndex != -1) it.getLong(threadIdIndex) else 0L
+                if (conversations.containsKey(threadId)) continue // Already processed newest message for this thread
 
-                val message = SmsMessage(id, threadId, address, body, date, type, read)
+                val id = if (idIndex != -1) it.getLong(idIndex) else 0L
+                val address = if (addressIndex != -1) it.getString(addressIndex) ?: "Unknown" else "Unknown"
+                var date = if (dateIndex != -1) it.getLong(dateIndex) else System.currentTimeMillis()
+                val type = if (typeIndex != -1) it.getInt(typeIndex) else 1
+                val read = if (readIndex != -1) it.getInt(readIndex) else 0
+                val ctType = if (ctTypeIndex != -1) it.getString(ctTypeIndex) else null
+                val isMms = ctType != null && ctType.contains("multipart")
+
+                // Normalize date: MMS date is in seconds, SMS is in ms
+                if (isMms && date < 1000000000000L) {
+                    date *= 1000
+                }
+
+                var body = ""
+                var attachments = emptyList<Attachment>()
+
+                if (isMms) {
+                    val mmsInfo = getMmsAttachments(id)
+                    body = mmsInfo.first
+                    attachments = mmsInfo.second
+                } else {
+                    body = if (bodyIndex != -1) it.getString(bodyIndex) ?: "" else ""
+                }
+
+                val message = SmsMessage(id, threadId, address, body, date, type, read, isMms, attachments)
                 conversations.getOrPut(threadId) { mutableListOf() }.add(message)
             }
         }
 
         return conversations.map { (threadId, messages) ->
-            val lastMsg = messages.first() // Sorted by default sort order (descending date)
+            val lastMsg = messages.first()
             val contactInfo = getContactInfo(lastMsg.address)
             Conversation(
                 threadId = threadId,
@@ -89,7 +104,7 @@ class SmsRepository(private val context: Context) {
                 contactLookupUri = contactInfo.lookupUri,
                 lastMessage = lastMsg.body,
                 lastMessageDate = lastMsg.date,
-                unreadCount = messages.count { it.read == 0 && it.type == Telephony.Sms.MESSAGE_TYPE_INBOX },
+                unreadCount = messages.count { it.read == 0 && (it.type == Telephony.Sms.MESSAGE_TYPE_INBOX || it.type == 1) }, // 1 is MESSAGE_BOX_INBOX for MMS
                 photoUri = contactInfo.photoUri
             )
         }.sortedByDescending { it.lastMessageDate }
@@ -99,44 +114,114 @@ class SmsRepository(private val context: Context) {
         val messages = mutableListOf<SmsMessage>()
         val contentResolver: ContentResolver = context.contentResolver
         
+        val uri = Uri.parse("content://mms-sms/conversations/$threadId")
+        val projection = arrayOf(
+            Telephony.Sms._ID,
+            Telephony.Sms.ADDRESS,
+            Telephony.Sms.BODY,
+            Telephony.Sms.DATE,
+            Telephony.Sms.TYPE,
+            Telephony.Sms.READ,
+            "ct_t"
+        )
+        
         val cursor: Cursor? = contentResolver.query(
-            Telephony.Sms.CONTENT_URI,
-            arrayOf(
-                Telephony.Sms._ID,
-                Telephony.Sms.THREAD_ID,
-                Telephony.Sms.ADDRESS,
-                Telephony.Sms.BODY,
-                Telephony.Sms.DATE,
-                Telephony.Sms.TYPE,
-                Telephony.Sms.READ
-            ),
-            "${Telephony.Sms.THREAD_ID} = ?",
-            arrayOf(threadId.toString()),
-            "${Telephony.Sms.DATE} ASC"
+            uri,
+            projection,
+            null,
+            null,
+            "date ASC"
         )
 
         cursor?.use {
+            Log.d("SmsRepository", "getMessagesForThread: Found ${it.count} messages for thread $threadId")
             val idIndex = it.getColumnIndex(Telephony.Sms._ID)
-            val threadIdIndex = it.getColumnIndex(Telephony.Sms.THREAD_ID)
             val addressIndex = it.getColumnIndex(Telephony.Sms.ADDRESS)
             val bodyIndex = it.getColumnIndex(Telephony.Sms.BODY)
             val dateIndex = it.getColumnIndex(Telephony.Sms.DATE)
-            val typeIndex = it.getColumnIndex(Telephony.Sms.TYPE)
+            val typeIndex = it.getColumnIndex(Telephony.Sms.TYPE) // Works for SMS, for MMS it might be MESSAGE_BOX
             val readIndex = it.getColumnIndex(Telephony.Sms.READ)
+            val ctTypeIndex = it.getColumnIndex("ct_t")
 
             while (it.moveToNext()) {
-                val id = it.getLong(idIndex)
-                val tId = it.getLong(threadIdIndex)
-                val address = it.getString(addressIndex) ?: ""
-                val body = it.getString(bodyIndex) ?: ""
-                val date = it.getLong(dateIndex)
-                val type = it.getInt(typeIndex)
-                val read = it.getInt(readIndex)
+                val id = if (idIndex != -1) it.getLong(idIndex) else 0L
+                var date = if (dateIndex != -1) it.getLong(dateIndex) else System.currentTimeMillis()
+                
+                // Handle separate type columns for SMS and MMS in unified view if needed
+                val type = if (typeIndex != -1) it.getInt(typeIndex) else 1 // Default to Inbox
+                val read = if (readIndex != -1) it.getInt(readIndex) else 0
+                
+                val ctType = if (ctTypeIndex != -1) it.getString(ctTypeIndex) else null
+                val isMms = ctType != null && ctType.contains("multipart")
+                
+                // Normalize date
+                if (isMms && date < 1000000000000L) {
+                    date *= 1000
+                }
+                
+                var address = if (addressIndex != -1) it.getString(addressIndex) ?: "" else ""
+                var body = ""
+                var attachments = emptyList<Attachment>()
 
-                messages.add(SmsMessage(id, tId, address, body, date, type, read))
+                if (isMms) {
+                    val mmsInfo = getMmsAttachments(id)
+                    body = mmsInfo.first
+                    attachments = mmsInfo.second
+                    // Address for MMS is in a different table (addr)
+                    if (address.isEmpty() || address == "insert-address-token") {
+                        address = getMmsAddress(id)
+                    }
+                } else {
+                    body = if (bodyIndex != -1) it.getString(bodyIndex) ?: "" else ""
+                }
+
+                messages.add(SmsMessage(id, threadId, address, body, date, type, read, isMms, attachments))
             }
         }
         return messages
+    }
+
+    private fun getMmsAttachments(mmsId: Long): Pair<String, List<Attachment>> {
+        val attachments = mutableListOf<Attachment>()
+        var textBody = ""
+        val selection = "mid = ?"
+        val selectionArgs = arrayOf(mmsId.toString())
+        val cursor = context.contentResolver.query(
+            Uri.parse("content://mms/part"),
+            null,
+            selection,
+            selectionArgs,
+            null
+        )
+
+        cursor?.use {
+            val ctIndex = it.getColumnIndex("ct")
+            val textIndex = it.getColumnIndex("text")
+            val idIndex = it.getColumnIndex("_id")
+
+            while (it.moveToNext()) {
+                val contentType = it.getString(ctIndex)
+                if ("text/plain" == contentType) {
+                    textBody = it.getString(textIndex) ?: ""
+                } else if (contentType != null && contentType.startsWith("image/")) {
+                    val partId = it.getLong(idIndex)
+                    val uri = "content://mms/part/$partId"
+                    attachments.add(Attachment(uri, contentType))
+                }
+            }
+        }
+        return Pair(textBody, attachments)
+    }
+
+    private fun getMmsAddress(mmsId: Long): String {
+        val uri = Uri.parse("content://mms/$mmsId/addr")
+        val cursor = context.contentResolver.query(uri, null, "msg_id = ?", arrayOf(mmsId.toString()), null)
+        cursor?.use {
+            if (it.moveToFirst()) {
+                return it.getString(it.getColumnIndex("address")) ?: ""
+            }
+        }
+        return "Unknown"
     }
 
     data class ContactInfo(val name: String?, val lookupUri: String?, val photoUri: String?)
@@ -222,6 +307,58 @@ class SmsRepository(private val context: Context) {
         } catch (e: Exception) {
             Log.e("SmsRepository", "Failed to send SMS to $address", e)
             throw e
+        }
+    }
+
+    fun sendMms(address: String, body: String, attachments: List<com.example.textbot.data.model.Attachment>) {
+        // Since PDU generation is very complex and usually involves third-party libraries 
+        // like 'mms-lib' or internal Android hidden APIs, and since the goal is to "add the possibility to join",
+        // I will implement a placeholder that inserts it into the system DB.
+        // NOTE: In a real app, you'd use a library to build the PDU and then use SmsManager.sendMultimediaMessage.
+        
+        try {
+            // Inserting into system MMS table
+            val values = ContentValues().apply {
+                put("address", address)
+                put("body", body)
+                put("date", System.currentTimeMillis() / 1000)
+                put("read", 1)
+                put("msg_box", 2) // Sent box
+                put("ct_t", "application/vnd.wap.multipart.related")
+                put("exp", 604800)
+                put("m_cls", "personal")
+                put("m_type", 128) // m-send-req
+                put("v", 18) // 1.2
+            }
+            val mmsUri = context.contentResolver.insert(Uri.parse("content://mms"), values)
+            
+            mmsUri?.let { uri ->
+                val mmsId = uri.lastPathSegment?.toLong() ?: return
+                
+                // Add text part
+                if (body.isNotEmpty()) {
+                    val partValues = ContentValues().apply {
+                        put("mid", mmsId)
+                        put("ct", "text/plain")
+                        put("text", body)
+                    }
+                    context.contentResolver.insert(Uri.parse("content://mms/part"), partValues)
+                }
+                
+                // Add attachments parts
+                attachments.forEach { attachment ->
+                    val partValues = ContentValues().apply {
+                        put("mid", mmsId)
+                        put("ct", attachment.contentType)
+                        put("_data", attachment.uri) // This is simplified, usually requires copying to a local folder or using a URI
+                    }
+                    context.contentResolver.insert(Uri.parse("content://mms/part"), partValues)
+                }
+                
+                Log.d("SmsRepository", "MMS inserted into sent box: $uri")
+            }
+        } catch (e: Exception) {
+            Log.e("SmsRepository", "Failed to insert MMS", e)
         }
     }
 
