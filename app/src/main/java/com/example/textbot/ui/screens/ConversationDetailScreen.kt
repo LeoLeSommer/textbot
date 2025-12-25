@@ -3,6 +3,8 @@ package com.example.textbot.ui.screens
 import android.content.Intent
 import android.net.Uri
 import android.provider.ContactsContract
+import android.widget.Toast
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -37,7 +39,8 @@ import com.example.textbot.ui.viewmodel.SmsViewModel
 fun ConversationDetailScreen(
     threadId: Long,
     viewModel: SmsViewModel,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    onVideoClick: (String) -> Unit
 ) {
     val conversations by viewModel.conversations.collectAsState()
     val conversation = remember(conversations, threadId) {
@@ -222,8 +225,21 @@ fun ConversationDetailScreen(
                     items = groupedMessages,
                     key = { "${it.message.id}_${it.message.isMms}" }
                 ) { groupedSms ->
+                    val context = LocalContext.current
                     Box(modifier = Modifier.animateItem()) {
-                        MessageBubble(groupedSms)
+                        MessageBubble(
+                            groupedSms = groupedSms,
+                            onVideoClick = onVideoClick,
+                            onDownloadClick = { attachment ->
+                                viewModel.downloadAttachment(attachment) { uri ->
+                                    if (uri != null) {
+                                        Toast.makeText(context, context.getString(R.string.msg_download_success), Toast.LENGTH_SHORT).show()
+                                    } else {
+                                        Toast.makeText(context, context.getString(R.string.msg_download_error), Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            }
+                        )
                     }
                 }
             }

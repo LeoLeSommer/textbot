@@ -37,4 +37,13 @@
     <string name="dialog_new_conversation_title">Nouvelle conversation</string>
     <string name="label_phone_number">Numéro de téléphone</string>
     <string name="action_start_conversation">Démarrer</string>
+    <string name="action_download">Télécharger</string>
+    <string name="attachment_video">Vidéo</string>
+    <string name="attachment_audio">Audio</string>
+    <string name="msg_downloading">Téléchargement…</string>
+    <string name="msg_download_success">Fichier enregistré dans Téléchargements</string>
+    <string name="msg_download_error">Échec de l\'enregistrement</string>
+    <string name="msg_opening_file">Ouverture du fichier…</string>
+    <string name="content_description_play">Lire</string>
+    <string name="content_description_pause">Pause</string>
 </resources>

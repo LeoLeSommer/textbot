@@ -2,7 +2,9 @@ package com.example.textbot.data.model
 
 data class Attachment(
     val uri: String,
-    val contentType: String
+    val contentType: String,
+    val fileName: String? = null,
+    val fileSize: Long? = null
 )
 
 data class SmsMessage(

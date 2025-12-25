@@ -32,6 +32,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.textbot.ui.screens.ConversationDetailScreen
 import com.example.textbot.ui.screens.ConversationListScreen
+import com.example.textbot.ui.screens.VideoPlayerScreen
 import com.example.textbot.ui.viewmodel.SmsViewModel
 import com.example.textbot.ui.theme.TextBotTheme
 
@@ -149,7 +150,17 @@ class MainActivity : ComponentActivity() {
                             ConversationDetailScreen(
                                 threadId = threadId,
                                 viewModel = viewModel,
-                                onBackClick = { navController.popBackStack() }
+                                onBackClick = { navController.popBackStack() },
+                                onVideoClick = { videoUri ->
+                                    navController.navigate("video/${android.net.Uri.encode(videoUri)}")
+                                }
+                            )
+                        }
+                        composable("video/{uri}") { backStackEntry ->
+                            val uri = android.net.Uri.decode(backStackEntry.arguments?.getString("uri"))
+                            VideoPlayerScreen(
+                                uri = uri,
+                                onBack = { navController.popBackStack() }
                             )
                         }
                     }

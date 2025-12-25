@@ -5,6 +5,7 @@ import android.util.Log
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.textbot.data.model.Attachment
 import com.example.textbot.data.model.Conversation
 import com.example.textbot.data.model.SmsMessage
 import com.example.textbot.data.repository.SmsRepository
@@ -137,5 +138,12 @@ class SmsViewModel(application: Application) : AndroidViewModel(application) {
 
     fun getOrCreateThreadId(phoneNumber: String): Long? {
         return repository.getThreadIdForAddress(phoneNumber)
+    }
+
+    fun downloadAttachment(attachment: Attachment, onResult: (Uri?) -> Unit) {
+        viewModelScope.launch {
+            val result = repository.saveAttachmentToDownloads(attachment)
+            onResult(result)
+        }
     }
 }

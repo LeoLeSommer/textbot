@@ -201,19 +201,88 @@ class SmsRepository(private val context: Context) {
             val ctIndex = it.getColumnIndex("ct")
             val textIndex = it.getColumnIndex("text")
             val idIndex = it.getColumnIndex("_id")
+            val nameIndex = it.getColumnIndex("name")
+            val clIndex = it.getColumnIndex("cl") // Content-Location often has the filename
 
             while (it.moveToNext()) {
-                val contentType = it.getString(ctIndex)
+                val contentType = it.getString(ctIndex) ?: continue
                 if ("text/plain" == contentType) {
                     textBody = it.getString(textIndex) ?: ""
-                } else if (contentType != null && contentType.startsWith("image/")) {
+                } else if (!contentType.contains("smil", ignoreCase = true)) {
+                    // Include any non-smil attachment (images, videos, audio, vcards, etc.)
                     val partId = it.getLong(idIndex)
                     val uri = "content://mms/part/$partId"
-                    attachments.add(Attachment(uri, contentType))
+                    val fileName = it.getString(nameIndex) ?: it.getString(clIndex)
+                    
+                    attachments.add(Attachment(
+                        uri = uri,
+                        contentType = contentType,
+                        fileName = fileName
+                    ))
                 }
             }
         }
         return Pair(textBody, attachments)
+    }
+
+    /**
+     * Saves an attachment to the system Downloads folder.
+     */
+    fun saveAttachmentToDownloads(attachment: Attachment): Uri? {
+        val cr = context.contentResolver
+        val sourceUri = Uri.parse(attachment.uri)
+        
+        try {
+            val extension = android.webkit.MimeTypeMap.getSingleton()
+                .getExtensionFromMimeType(attachment.contentType) ?: ""
+            
+            val fileName = attachment.fileName ?: "mms_attachment_${System.currentTimeMillis()}"
+            val fullName = if (extension.isNotEmpty() && !fileName.endsWith(".$extension")) {
+                "$fileName.$extension"
+            } else {
+                fileName
+            }
+
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+                val values = ContentValues().apply {
+                    put(android.provider.MediaStore.Downloads.DISPLAY_NAME, fullName)
+                    put(android.provider.MediaStore.Downloads.MIME_TYPE, attachment.contentType)
+                    put(android.provider.MediaStore.Downloads.IS_PENDING, 1)
+                }
+
+                val collection = android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI
+                val itemUri = cr.insert(collection, values) ?: return null
+
+                cr.openOutputStream(itemUri)?.use { outputStream ->
+                    cr.openInputStream(sourceUri)?.use { inputStream ->
+                        inputStream.copyTo(outputStream)
+                    }
+                }
+
+                values.clear()
+                values.put(android.provider.MediaStore.Downloads.IS_PENDING, 0)
+                cr.update(itemUri, values, null, null)
+                return itemUri
+            } else {
+                // Legacy approach for API < 29
+                val downloadsDir = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS)
+                val destFile = java.io.File(downloadsDir, fullName)
+                
+                cr.openInputStream(sourceUri)?.use { inputStream ->
+                    destFile.outputStream().use { outputStream ->
+                        inputStream.copyTo(outputStream)
+                    }
+                }
+                
+                // Trigger media scanner
+                android.media.MediaScannerConnection.scanFile(context, arrayOf(destFile.absolutePath), arrayOf(attachment.contentType), null)
+                
+                return Uri.fromFile(destFile)
+            }
+        } catch (e: Exception) {
+            Log.e("SmsRepository", "Error saving attachment", e)
+            return null
+        }
     }
 
     private fun getMmsAddress(mmsId: Long): String {
